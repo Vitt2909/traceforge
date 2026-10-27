@@ -67,7 +67,7 @@ def _instrument(totals: dict) -> None:
             setattr(mod, fn_name, wrapped)
 
 
-def worker(image: str, quality: str, reps: int) -> dict:
+def worker(image: str, quality: str, reps: int, svg_dir: str = "") -> dict:
     t = time.perf_counter()
     from traco import vectorize
 
@@ -92,6 +92,9 @@ def worker(image: str, quality: str, reps: int) -> dict:
 
     svg = result.svg.encode()
     rep = result.report()
+    if svg_dir:
+        Path(svg_dir).mkdir(parents=True, exist_ok=True)
+        (Path(svg_dir) / f"{Path(image).stem}.{quality}.svg").write_bytes(svg)
     return {
         "imagem": Path(image).name,
         "qualidade": quality,
@@ -213,19 +216,21 @@ def main() -> int:
     p.add_argument("-r", "--repeticoes", type=int, default=3)
     p.add_argument("-o", "--saida", default=str(ROOT / "benchmarks" / "resultados"))
     p.add_argument("--sem-extras", action="store_true", help="pula CLI, API e pytest")
-    p.add_argument("--worker", nargs=3, metavar=("IMG", "Q", "R"), help=argparse.SUPPRESS)
+    p.add_argument("--salvar-svg", action="store_true", help="salva os SVGs em <saida>/svg/")
+    p.add_argument("--worker", nargs=4, metavar=("IMG", "Q", "R", "SVG"), help=argparse.SUPPRESS)
     args = p.parse_args()
 
     if args.worker:
-        img, q, r = args.worker
-        print(json.dumps(worker(img, q, int(r))))
+        img, q, r, svg_dir = args.worker
+        print(json.dumps(worker(img, q, int(r), svg_dir)))
         return 0
 
     images = [Path(i) for i in args.imagens] or sorted((ROOT / "exemplos" / "entrada").iterdir())
+    svg_dir = str(Path(args.saida) / "svg") if args.salvar_svg else ""
     results = []
     for img in images:
         for q in args.qualidade:
-            p_ = subprocess.run([sys.executable, __file__, "--worker", str(img), q, str(args.repeticoes)],
+            p_ = subprocess.run([sys.executable, __file__, "--worker", str(img), q, str(args.repeticoes), svg_dir],
                                 capture_output=True, text=True)
             if p_.returncode:
                 print(f"ERRO {img.name} [{q}]\n{p_.stderr}", file=sys.stderr)
