@@ -1,0 +1,90 @@
+{
+  "environment": {
+    "python": "3.12",
+    "platform": "Linux x86_64",
+    "dependencies": {
+      "vtracer": "0.6.15",
+      "resvg-py": "0.5.0",
+      "opencv-python-headless": "5.0.0.93",
+      "numpy": "2.3.5",
+      "Pillow": "12.3.0",
+      "scikit-image": "0.26.0",
+      "fastapi": "0.162.0"
+    }
+  },
+  "quality": "balanced",
+  "results": [
+    {
+      "image": "assinatura",
+      "tipo": "lineart",
+      "ssim": 0.983,
+      "delta_e": 0.88,
+      "caminhos": 1,
+      "bytes": 5450,
+      "segundos": 0.47
+    },
+    {
+      "image": "foto_cafe",
+      "tipo": "photo",
+      "ssim": 0.7984,
+      "delta_e": 3.75,
+      "caminhos": 4422,
+      "bytes": 1660530,
+      "segundos": 2.96
+    },
+    {
+      "image": "foto_gato",
+      "tipo": "photo",
+      "ssim": 0.8548,
+      "delta_e": 2.71,
+      "caminhos": 2868,
+      "bytes": 1112352,
+      "segundos": 1.78
+    },
+    {
+      "image": "logo_marca",
+      "tipo": "logo",
+      "ssim": 0.9213,
+      "delta_e": 2.21,
+      "caminhos": 5,
+      "bytes": 4411,
+      "segundos": 2.03
+    },
+    {
+      "image": "logo_skimage",
+      "tipo": "logo",
+      "ssim": 0.911,
+      "delta_e": 2.85,
+      "caminhos": 78,
+      "bytes": 47270,
+      "segundos": 10.83
+    },
+    {
+      "image": "personagem",
+      "tipo": "logo",
+      "ssim": 0.9814,
+      "delta_e": 1.93,
+      "caminhos": 10,
+      "bytes": 16177,
+      "segundos": 4.22
+    },
+    {
+      "image": "pixel_sprite",
+      "tipo": "pixel",
+      "ssim": 1.0,
+      "delta_e": 0.0,
+      "caminhos": 5,
+      "bytes": 2792,
+      "segundos": 0.01
+    },
+    {
+      "image": "silhueta_cavalo",
+      "tipo": "lineart",
+      "ssim": 0.9788,
+      "delta_e": 0.46,
+      "caminhos": 1,
+      "bytes": 21879,
+      "segundos": 0.43
+    }
+  ]
+}

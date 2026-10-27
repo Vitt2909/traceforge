@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TraceForge — imagem para SVG</title>
+<style>
+:root{--bg:#f6f5f2;--fg:#1b1b1b;--mut:#6b6b6b;--line:#dcdad4;--acc:#e5502a;--card:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#141414;--fg:#eee;--mut:#9a9a9a;--line:#2c2c2c;--card:#1d1d1d}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:32px 16px}h1{font-size:28px;margin:0 0 4px}p.sub{color:var(--mut);margin:0 0 24px}
+#drop{border:2px dashed var(--line);border-radius:14px;padding:40px 16px;text-align:center;background:var(--card);cursor:pointer}
+#drop.on{border-color:var(--acc)}.row{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0}
+label{font-size:14px;color:var(--mut)}select,input[type=number]{display:block;margin-top:4px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg)}
+button,a.btn{padding:10px 18px;border:0;border-radius:10px;background:var(--acc);color:#fff;font-weight:600;cursor:pointer;text-decoration:none}
+button:disabled{opacity:.5}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+@media (max-width:640px){.grid{grid-template-columns:1fr}}
+.pane{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;min-height:200px;display:flex;flex-direction:column;gap:8px}
+.pane .view{flex:1;display:flex;align-items:center;justify-content:center;background:repeating-conic-gradient(#0000000d 0 25%,#0000 0 50%) 0 0/16px 16px;border-radius:8px;min-height:220px}
+.pane img{max-width:100%;max-height:420px}#stats{font:13px ui-monospace,monospace;color:var(--mut)}
+</style></head><body><main>
+<h1>TraceForge</h1><p class="sub">Imagem para vetor. Escolha, compare e baixe seu SVG.</p><p class="sub">Processamento neste servidor · até 20 MB / 20 MP · fotos podem gerar SVGs grandes.</p>
+<div id="drop" role="button" tabindex="0" aria-label="Escolher imagem">Arraste a imagem aqui ou clique para escolher<input id="file" type="file" accept=".png,.jpg,.jpeg,.webp,.gif,.bmp,.tif,.tiff" hidden></div>
+<div class="row">
+<label>Tipo<select id="preset"><option value="auto">Detectar sozinho</option><option value="logo">Logo / ícone</option><option value="illustration">Ilustração / personagem</option><option value="lineart">TraceForge / P&amp;B</option><option value="pixel">Pixel art</option><option value="photo">Foto</option></select></label>
+<label>Qualidade<select id="qualidade"><option value="fast">Rápida</option><option value="balanced" selected>Equilibrada</option><option value="best">Melhor</option></select></label>
+<label>Máx. de cores<input id="cores" type="number" min="2" max="64" placeholder="auto"></label>
+<label><br><input id="transparente" type="checkbox"> Remover fundo</label>
+<label><br><button id="go" disabled>Vetorizar</button></label>
+</div>
+<div class="grid"><div class="pane"><b>Original</b><div class="view" id="orig"></div></div>
+<div class="pane"><b>SVG</b><div class="view" id="out"></div><div id="stats" role="status" aria-live="polite"></div><a id="dl" class="btn" hidden>Baixar .svg</a></div></div>
+</main><script>
+const $=id=>document.getElementById(id);
+let file=null, originalURL=null, resultURL=null, busy=false;
+function clearResult(){
+  if(resultURL)URL.revokeObjectURL(resultURL);
+  resultURL=null;$('out').replaceChildren();$('dl').hidden=true;$('dl').removeAttribute('href');$('stats').textContent='';
+}
+function pick(f){
+  if(busy||!f)return;
+  clearResult();file=null;$('go').disabled=true;
+  if(originalURL)URL.revokeObjectURL(originalURL);
+  originalURL=null;$('orig').replaceChildren();
+  if(f.size>20*1024*1024){$('stats').textContent='Escolha um arquivo de até 20 MB.';return;}
+  if(!/\.(png|jpe?g|webp|gif|bmp|tiff?)$/i.test(f.name)){$('stats').textContent='Formato não suportado. Use PNG, JPG, WebP, GIF, BMP ou TIFF.';return;}
+  file=f;originalURL=URL.createObjectURL(f);
+  const img=new Image();img.alt='Imagem original';img.src=originalURL;$('orig').append(img);$('go').disabled=false;
+}
+$('drop').onclick=()=>{if(!busy)$('file').click()};
+$('drop').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('drop').click()}};
+$('file').onchange=e=>pick(e.target.files[0]);
+['dragover','dragenter'].forEach(t=>$('drop').addEventListener(t,e=>{e.preventDefault();if(!busy)$('drop').classList.add('on')}));
+['dragleave','drop'].forEach(t=>$('drop').addEventListener(t,e=>{e.preventDefault();$('drop').classList.remove('on')}));
+$('drop').addEventListener('drop',e=>pick(e.dataTransfer.files[0]));
+$('cores').title='Disponível nos tipos Logo e Ilustração';
+function updateColors(){const enabled=['logo','illustration'].includes($('preset').value);$('cores').disabled=!enabled;if(!enabled)$('cores').value='';}
+$('preset').onchange=updateColors;updateColors();
+$('go').onclick=async()=>{
+  if(!file||busy)return;
+  if(!$('cores').checkValidity()){$('cores').reportValidity();return;}
+  const selected=file, fd=new FormData();fd.append('arquivo',selected);fd.append('preset',$('preset').value);
+  fd.append('qualidade',$('qualidade').value);if($('cores').value)fd.append('cores',$('cores').value);fd.append('transparente',$('transparente').checked);
+  clearResult();busy=true;document.querySelectorAll('input,select,button').forEach(el=>el.disabled=true);
+  $('go').textContent='Vetorizando…';$('stats').textContent='Analisando a imagem e comparando candidatos. Aguarde…';
+  try{
+    const response=await fetch('/api/vetorizar',{method:'POST',body:fd});
+    if(!response.ok){let message='Falha na conversão.';try{const error=await response.json();message=typeof error.detail==='string'?error.detail:'Verifique as opções selecionadas.'}catch{}throw new Error(message)}
+    const svg=await response.text(), rep=JSON.parse(response.headers.get('X-TraceForge-Report')||'{}');
+    resultURL=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'}));
+    const img=new Image();img.alt='Resultado vetorizado';img.src=resultURL;$('out').replaceChildren(img);
+    $('dl').href=resultURL;$('dl').download=selected.name.replace(/\.[^.]+$/,'')+'.svg';$('dl').hidden=false;
+    $('stats').textContent=`Tipo: ${rep.tipo} · SSIM: ${rep.ssim} · ${rep.caminhos} caminhos · ${(rep.bytes/1024).toFixed(1)} KB · ${rep.segundos}s`;
+  }catch(error){$('stats').textContent='Erro: '+error.message}
+  finally{busy=false;document.querySelectorAll('input,select,button').forEach(el=>el.disabled=false);updateColors();$('go').disabled=!file;$('go').textContent='Vetorizar'}
+};
+</script></body></html>
