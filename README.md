@@ -57,10 +57,10 @@ python -m traceforge logo.png
 |---|---|
 | `-o, --saida` | Arquivo `.svg` ou pasta; cria diretórios necessários |
 | `-p, --preset` | `auto`, `logo`, `illustration`, `lineart`, `pixel`, `photo` |
-| `-q, --qualidade` | `fast`: 1 candidato; `balanced`: até 3; `best`: até 6; pixel art usa 1 |
+| `-q, --qualidade` | `fast`: 1 candidato; `balanced`: 2; `best`: até 4, com parada por ganho marginal; pixel art usa 1 |
 | `-c, --cores` | Máximo de 2–64 cores, apenas nos presets `logo` e `illustration` |
 | `-t, --transparente` | Remove fundo uniforme conectado às bordas |
-| `--relatorio` | Salva JSON com SSIM, ΔE76, caminhos, paleta e candidatos |
+| `--relatorio` | Salva JSON com SSIM, ΔE76, nota estrutural, avisos, tempos, caminhos, paleta e candidatos |
 | `--ia-fundo` | Remoção de fundo opcional; instale `python -m pip install -e ".[ai]"`; baixa pesos na primeira execução |
 | `--otimizar` | Tenta executar SVGO via `npx`; exige Node.js e pode baixar o pacote. Se indisponível, mantém o SVG |
 
@@ -102,7 +102,7 @@ O serviço foi feito para uso local e não tem autenticação. Para hospedagem p
 3. **Pré-processamento:** redução de ruído, ampliação, paleta aprendida em regiões planas e suavização de rótulos por votação.
 4. **Traçado:** VTracer 0.6.x em camadas; pixel art usa retângulos por cor e opacidade, preservando pixels.
 5. **Saída:** SVG com `viewBox`, título escapado e dimensões originais.
-6. **Avaliação:** rasteriza com resvg, compara SSIM/ΔE76 em fundo branco e aplica uma penalidade de complexidade. A pontuação é uma heurística, não uma garantia de qualidade perceptual.
+6. **Avaliação:** mantém SSIM/ΔE76 para comparação e acrescenta recuperação de bordas, componentes pequenos e erro nas cores. A avaliação estrutural usa até 1536 px para não reduzir as letras da grade a metade do tamanho. Resultados com perda grave são marcados `rejected`; o CLI mostra `REJEITADO` e termina com código 2. Resultados duvidosos recebem `review`/`REVISAR`. A nota é heurística e não certifica legibilidade por OCR.
 
 - Máximo de **20 MB e 20 megapixels**. O processamento reduz o maior lado a 4096 px, mas mantém as dimensões originais no SVG.
 - Fotos geram muitos caminhos e arquivos grandes. Para um resultado mais leve e estilizado, use `-p illustration -c 12`.
@@ -110,6 +110,24 @@ O serviço foi feito para uso local e não tem autenticação. Para hospedagem p
 - Texto vira contorno, não fonte editável. Assinaturas usam contornos, **não centerline**.
 - O modo automático pode classificar pequenas artes como pixel art. Use `-p logo` quando desejar curvas.
 - A v0.1 não inclui WASM, StarVector, DiffVG, paleta fixa, reconhecimento de primitivas ou conectores pagos.
+
+## Correções de logos (0.1.1)
+
+- Pequenas áreas coloridas impedem a classificação automática como preto e branco; o fundo não dilui a cor da marca.
+- O traçado binário identifica tinta clara sobre fundo escuro. Uma saída binária reprovada no automático recebe uma tentativa colorida adicional.
+- Hastes, acentos e outros traços finos são protegidos da suavização. A preservação de detalhes pode aumentar o SVG.
+- A paleta é aprendida de uma amostra limitada e reutilizada entre candidatos. A atribuição de cores usa buscas em árvore em blocos, sem matrizes gigantes de distâncias.
+- `best` começa com os mesmos candidatos de `balanced` e só continua enquanto há ganho de pelo menos 0,003 na pontuação; encerra ao atingir 0,97 de qualidade ou um platô. Candidatos extras reutilizam a paleta e a avaliação de referência.
+
+[Comparação visual dos 10 logos e medições antes/depois](docs/logo-regressions/README.md).
+
+```bash
+python benchmarks/crop_logos.py tests/fixtures/logo-grid.png -o logos
+python benchmarks/bench.py "logos/*.png" -r 2 --sem-extras --salvar-svg -o resultado-balanced
+python benchmarks/bench.py "logos/*.png" -r 2 --sem-extras --salvar-svg -q best -o resultado-best
+```
+
+`bench.py --repo <checkout>` mede outra versão com o mesmo script. O tempo exclui imports e a renderização das comparações; o pico RSS inclui a memória do processo e das dependências. Os valores não devem ser comparados diretamente entre máquinas. O código 2 no CLI indica uma saída salva para inspeção, mas reprovada pela avaliação estrutural.
 
 ## Desenvolvimento e verificação
 

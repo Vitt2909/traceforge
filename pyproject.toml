@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "traceforge"
-version = "0.1.0"
+version = "0.1.1"
 description = "Transforma qualquer imagem (logo, personagem, desenho, foto, pixel art) em SVG."
 readme = "README.md"
 license = "MIT"
@@ -15,6 +15,7 @@ dependencies = [
   "opencv-python-headless>=4.8",
   "numpy>=1.24",
   "Pillow>=10",
+  "scipy>=1.11",
   "scikit-image>=0.22",    # SSIM
   "resvg-py>=0.1",         # rasteriza o SVG para avaliar (Rust, roda no Windows)
 ]
@@ -22,7 +23,7 @@ dependencies = [
 [project.optional-dependencies]
 web = ["fastapi>=0.110", "uvicorn>=0.29", "python-multipart>=0.0.9"]
 ai = ["rembg[cpu]>=2.0"]
-dev = ["pytest>=8", "httpx>=0.27", "fastapi>=0.110", "uvicorn>=0.29", "python-multipart>=0.0.9", "build>=1.2"]
+dev = ["pytest>=8", "httpx>=0.27", "fastapi>=0.110", "uvicorn>=0.29", "python-multipart>=0.0.9", "build>=1.2", "psutil>=5.9"]
 
 [project.urls]
 Homepage = "https://github.com/Vitt2909/traceforge"

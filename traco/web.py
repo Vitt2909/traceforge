@@ -24,12 +24,12 @@ async def lifespan(app):
     yield
 
 
-app = FastAPI(title="TraceForge", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="TraceForge", version="0.1.1", lifespan=lifespan)
 
 
 @app.get("/healthz")
 def health():
-    return {"status": "ok", "version": "0.1.0"}
+    return {"status": "ok", "version": "0.1.1"}
 
 
 @app.post("/api/vetorizar")

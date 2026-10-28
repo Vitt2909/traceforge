@@ -1,0 +1,303 @@
+[
+  {
+    "image": "01_sabor_arte.png",
+    "before": {
+      "ssim": 0.7986,
+      "delta_e": 3.32,
+      "edge_recall": 0.7524,
+      "edge_precision": 0.9983,
+      "edge_f1": 0.8581,
+      "detail_recall": 0.4468,
+      "color_delta_e": 25.18,
+      "quality_score": 0.2926,
+      "status": "review",
+      "warnings": [
+        "Revise os detalhes e as cores antes de usar o SVG."
+      ]
+    },
+    "after": {
+      "ssim": 0.7873,
+      "delta_e": 3.47,
+      "edge_recall": 0.9986,
+      "edge_precision": 1.0,
+      "edge_f1": 0.9993,
+      "detail_recall": 0.9981,
+      "color_delta_e": 12.75,
+      "quality_score": 0.6356,
+      "status": "ok",
+      "warnings": []
+    }
+  },
+  {
+    "image": "02_forcefit.png",
+    "before": {
+      "ssim": 0.7907,
+      "delta_e": 2.79,
+      "edge_recall": 0.8918,
+      "edge_precision": 1.0,
+      "edge_f1": 0.9428,
+      "detail_recall": 0.6984,
+      "color_delta_e": 7.44,
+      "quality_score": 0.5299,
+      "status": "review",
+      "warnings": [
+        "Revise os detalhes e as cores antes de usar o SVG."
+      ]
+    },
+    "after": {
+      "ssim": 0.7479,
+      "delta_e": 3.38,
+      "edge_recall": 0.9929,
+      "edge_precision": 1.0,
+      "edge_f1": 0.9964,
+      "detail_recall": 0.973,
+      "color_delta_e": 6.65,
+      "quality_score": 0.655,
+      "status": "ok",
+      "warnings": []
+    }
+  },
+  {
+    "image": "03_livia_barros.png",
+    "before": {
+      "ssim": 0.8992,
+      "delta_e": 2.29,
+      "edge_recall": 0.4973,
+      "edge_precision": 1.0,
+      "edge_f1": 0.6642,
+      "detail_recall": 0.2068,
+      "color_delta_e": 2.26,
+      "quality_score": 0.3165,
+      "status": "rejected",
+      "warnings": [
+        "Perda grave de bordas ou pequenos elementos detectada."
+      ]
+    },
+    "after": {
+      "ssim": 0.9648,
+      "delta_e": 1.99,
+      "edge_recall": 0.9216,
+      "edge_precision": 1.0,
+      "edge_f1": 0.9592,
+      "detail_recall": 0.9821,
+      "color_delta_e": 1.97,
+      "quality_score": 0.8751,
+      "status": "ok",
+      "warnings": []
+    }
+  },
+  {
+    "image": "04_mundopet.png",
+    "before": {
+      "ssim": 0.9537,
+      "delta_e": 2.37,
+      "edge_recall": 0.9817,
+      "edge_precision": 0.9989,
+      "edge_f1": 0.9902,
+      "detail_recall": 0.877,
+      "color_delta_e": 5.01,
+      "quality_score": 0.791,
+      "status": "ok",
+      "warnings": []
+    },
+    "after": {
+      "ssim": 0.9592,
+      "delta_e": 2.39,
+      "edge_recall": 0.9794,
+      "edge_precision": 0.9981,
+      "edge_f1": 0.9887,
+      "detail_recall": 0.9089,
+      "color_delta_e": 5.47,
+      "quality_score": 0.8118,
+      "status": "ok",
+      "warnings": []
+    }
+  },
+  {
+    "image": "05_techfix.png",
+    "before": {
+      "ssim": 0.819,
+      "delta_e": 3.08,
+      "edge_recall": 0.7345,
+      "edge_precision": 1.0,
+      "edge_f1": 0.847,
+      "detail_recall": 0.5631,
+      "color_delta_e": 12.03,
+      "quality_score": 0.436,
+      "status": "review",
+      "warnings": [
+        "Revise os detalhes e as cores antes de usar o SVG."
+      ]
+    },
+    "after": {
+      "ssim": 0.8724,
+      "delta_e": 2.25,
+      "edge_recall": 0.9977,
+      "edge_precision": 1.0,
+      "edge_f1": 0.9989,
+      "detail_recall": 1.0,
+      "color_delta_e": 8.0,
+      "quality_score": 0.7621,
+      "status": "ok",
+      "warnings": []
+    }
+  },
+  {
+    "image": "06_nova_era.png",
+    "before": {
+      "ssim": 0.9165,
+      "delta_e": 4.91,
+      "edge_recall": 0.9029,
+      "edge_precision": 0.994,
+      "edge_f1": 0.9463,
+      "detail_recall": 0.9724,
+      "color_delta_e": 56.37,
+      "quality_score": 0.3304,
+      "status": "review",
+      "warnings": [
+        "Revise os detalhes e as cores antes de usar o SVG."
+      ]
+    },
+    "after": {
+      "ssim": 0.9724,
+      "delta_e": 1.4,
+      "edge_recall": 0.9954,
+      "edge_precision": 0.9939,
+      "edge_f1": 0.9946,
+      "detail_recall": 1.0,
+      "color_delta_e": 3.85,
+      "quality_score": 0.9086,
+      "status": "ok",
+      "warnings": []
+    }
+  },
+  {
+    "image": "07_horizonte.png",
+    "before": {
+      "ssim": 0.8777,
+      "delta_e": 5.47,
+      "edge_recall": 0.8961,
+      "edge_precision": 0.8659,
+      "edge_f1": 0.8807,
+      "detail_recall": 0.8506,
+      "color_delta_e": 5.89,
+      "quality_score": 0.7006,
+      "status": "ok",
+      "warnings": []
+    },
+    "after": {
+      "ssim": 0.8664,
+      "delta_e": 5.73,
+      "edge_recall": 0.9129,
+      "edge_precision": 0.8754,
+      "edge_f1": 0.8938,
+      "detail_recall": 0.8659,
+      "color_delta_e": 6.18,
+      "quality_score": 0.6977,
+      "status": "ok",
+      "warnings": []
+    }
+  },
+  {
+    "image": "08_grao_prosa.png",
+    "before": {
+      "ssim": 0.8756,
+      "delta_e": 3.08,
+      "edge_recall": 0.7186,
+      "edge_precision": 1.0,
+      "edge_f1": 0.8362,
+      "detail_recall": 0.3726,
+      "color_delta_e": 7.55,
+      "quality_score": 0.3846,
+      "status": "rejected",
+      "warnings": [
+        "Perda grave de bordas ou pequenos elementos detectada."
+      ]
+    },
+    "after": {
+      "ssim": 0.9296,
+      "delta_e": 2.43,
+      "edge_recall": 0.9666,
+      "edge_precision": 1.0,
+      "edge_f1": 0.983,
+      "detail_recall": 0.9633,
+      "color_delta_e": 6.51,
+      "quality_score": 0.8095,
+      "status": "ok",
+      "warnings": []
+    }
+  },
+  {
+    "image": "09_donna.png",
+    "before": {
+      "ssim": 0.9524,
+      "delta_e": 1.6,
+      "edge_recall": 0.9946,
+      "edge_precision": 1.0,
+      "edge_f1": 0.9973,
+      "detail_recall": 1.0,
+      "color_delta_e": 8.42,
+      "quality_score": 0.8241,
+      "status": "ok",
+      "warnings": []
+    },
+    "after": {
+      "ssim": 0.9799,
+      "delta_e": 1.11,
+      "edge_recall": 1.0,
+      "edge_precision": 1.0,
+      "edge_f1": 1.0,
+      "detail_recall": 1.0,
+      "color_delta_e": 6.43,
+      "quality_score": 0.8803,
+      "status": "ok",
+      "warnings": []
+    }
+  },
+  {
+    "image": "10_rapidcar.png",
+    "before": {
+      "ssim": 0.9018,
+      "delta_e": 1.95,
+      "edge_recall": 0.7074,
+      "edge_precision": 0.9873,
+      "edge_f1": 0.8242,
+      "detail_recall": 0.5433,
+      "color_delta_e": 14.97,
+      "quality_score": 0.4459,
+      "status": "review",
+      "warnings": [
+        "Revise os detalhes e as cores antes de usar o SVG."
+      ]
+    },
+    "after": {
+      "ssim": 0.9622,
+      "delta_e": 1.07,
+      "edge_recall": 0.9905,
+      "edge_precision": 1.0,
+      "edge_f1": 0.9952,
+      "detail_recall": 0.9959,
+      "color_delta_e": 9.16,
+      "quality_score": 0.8197,
+      "status": "ok",
+      "warnings": []
+    }
+  },
+  {
+    "image": "rapidcar-forced-lineart-diagnostic",
+    "before": {
+      "ssim": 0.803,
+      "delta_e": 6.47,
+      "edge_recall": 0.0,
+      "edge_precision": 0.0,
+      "edge_f1": 0.0,
+      "detail_recall": 0.0,
+      "color_delta_e": 81.16,
+      "quality_score": 0.0415,
+      "status": "rejected",
+      "warnings": [
+        "Perda grave de bordas ou pequenos elementos detectada."
+      ]
+    }
+  }
+]

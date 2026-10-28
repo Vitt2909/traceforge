@@ -4,6 +4,7 @@ Regra de ouro (repetida em todo fórum de design): o traçador só é tão bom q
 a imagem que recebe. Então limpamos ruído, ampliamos imagens pequenas,
 reduzimos a paleta para as cores "de verdade" e binarizamos o alfa.
 """
+
 from __future__ import annotations
 
 import cv2
@@ -11,7 +12,9 @@ import numpy as np
 
 
 # ---------------------------------------------------------------- fundo ----
-def remove_flat_background(rgba: np.ndarray, bg: tuple[int, int, int], tol: float = 12.0) -> np.ndarray:
+def remove_flat_background(
+    rgba: np.ndarray, bg: tuple[int, int, int], tol: float = 12.0
+) -> np.ndarray:
     """Torna transparente o fundo chapado conectado às bordas (flood fill).
 
     Só remove regiões ligadas à borda, então o branco *dentro* do logo fica.
@@ -21,7 +24,9 @@ def remove_flat_background(rgba: np.ndarray, bg: tuple[int, int, int], tol: floa
     bg_lab = cv2.cvtColor(np.float32([[bg]]) / 255.0, cv2.COLOR_RGB2LAB)[0, 0]
     near = (np.linalg.norm(lab - bg_lab, axis=2) < tol).astype(np.uint8)
     n, labels = cv2.connectedComponents(near, connectivity=4)
-    border = np.unique(np.concatenate([labels[0], labels[-1], labels[:, 0], labels[:, -1]]))
+    border = np.unique(
+        np.concatenate([labels[0], labels[-1], labels[:, 0], labels[:, -1]])
+    )
     border = border[border != 0]
     mask = np.isin(labels, border)
     out[mask, 3] = 0
@@ -33,7 +38,9 @@ def remove_background_ai(rgba: np.ndarray) -> np.ndarray:
     try:
         from rembg import remove  # type: ignore
     except ImportError as exc:
-        raise RuntimeError("Instale o extra de IA: python -m pip install '.[ai]'") from exc
+        raise RuntimeError(
+            "Instale o extra de IA: python -m pip install '.[ai]'"
+        ) from exc
     from PIL import Image
 
     return np.asarray(remove(Image.fromarray(rgba)).convert("RGBA"))
@@ -48,14 +55,18 @@ def upscale(rgba: np.ndarray, factor: int) -> np.ndarray:
     a = rgba[..., 3:4].astype(np.float32) / 255.0
     rgb = rgba[..., :3].astype(np.float32) * a
     rgb = cv2.resize(rgb, (w * factor, h * factor), interpolation=cv2.INTER_CUBIC)
-    a2 = cv2.resize(a[..., 0], (w * factor, h * factor), interpolation=cv2.INTER_CUBIC)[..., None]
+    a2 = cv2.resize(a[..., 0], (w * factor, h * factor), interpolation=cv2.INTER_CUBIC)[
+        ..., None
+    ]
     a2 = np.clip(a2, 0, 1)
     rgb = np.where(a2 > 1e-3, rgb / np.maximum(a2, 1e-3), 0)
     out = np.dstack([np.clip(rgb, 0, 255), a2 * 255]).astype(np.uint8)
     return out
 
 
-def pick_upscale(width: int, height: int, target: int = 1600, max_factor: int = 4) -> int:
+def pick_upscale(
+    width: int, height: int, target: int = 1600, max_factor: int = 4
+) -> int:
     """Amplia imagens pequenas para que curvas tenham "pixels suficientes" para ficarem suaves."""
     side = max(width, height)
     f = 1
@@ -68,7 +79,9 @@ def pick_upscale(width: int, height: int, target: int = 1600, max_factor: int = 
 def denoise(rgba: np.ndarray, strength: str = "light") -> np.ndarray:
     """Bilateral suaviza ruído/artefato de JPEG preservando bordas."""
     out = rgba.copy()
-    d, sc, ss = {"light": (5, 30, 5), "medium": (7, 50, 7), "strong": (9, 75, 9)}[strength]
+    d, sc, ss = {"light": (5, 30, 5), "medium": (7, 50, 7), "strong": (9, 75, 9)}[
+        strength
+    ]
     out[..., :3] = cv2.bilateralFilter(rgba[..., :3], d, sc, ss)
     return out
 
@@ -107,75 +120,98 @@ def quantize(
     desenho — se entrassem no k-means virariam anéis finos com centenas de caminhos.
     Eles são depois encaixados na cor real mais próxima.
     """
+    from scipy.spatial import cKDTree
+
     opaque = rgba[..., 3] > 0
+    if not opaque.any():
+        return rgba.copy(), []
+    # Fit at most 12k pixels once. Iterative refinement is bounded
+    # by sample count, not the number of pixels in the source image.
     rgb = rgba[..., :3][opaque]
-    if len(rgb) == 0:
-        return rgba, []
-    # LAB float: L 0-100, a/b ±127 → distância euclidiana = ΔE76
-    lab = cv2.cvtColor(rgb.reshape(-1, 1, 3).astype(np.float32) / 255.0, cv2.COLOR_RGB2LAB).reshape(-1, 3)
-
-    fit = lab
-    if edge_aware:
-        g = cv2.cvtColor(rgba[..., :3], cv2.COLOR_RGB2GRAY).astype(np.float32)
-        grad = cv2.magnitude(cv2.Sobel(g, cv2.CV_32F, 1, 0), cv2.Sobel(g, cv2.CV_32F, 0, 1))
-        grad = cv2.dilate(grad, np.ones((3, 3), np.uint8))
-        flat = (grad < 40)[opaque]
-        if flat.mean() > 0.2:
-            fit = lab[flat]
-
     rng = np.random.default_rng(seed)
-    sample = fit if len(fit) <= 60000 else fit[rng.choice(len(fit), 60000, replace=False)]
-    sample = np.ascontiguousarray(sample, dtype=np.float32)
-    k = int(min(max_colors, max(1, len(np.unique(np.round(sample).astype(np.int32), axis=0)))))
+    sample_ids = rng.choice(len(rgb), min(len(rgb), 12000), replace=False)
+    sample_rgb = rgb[sample_ids]
+    sample = cv2.cvtColor(
+        sample_rgb.reshape(-1, 1, 3).astype(np.float32) / 255, cv2.COLOR_RGB2LAB
+    ).reshape(-1, 3)
+    fit = sample
+    if edge_aware:
+        gray = cv2.cvtColor(rgba[..., :3], cv2.COLOR_RGB2GRAY).astype(np.float32)
+        grad = cv2.magnitude(
+            cv2.Sobel(gray, cv2.CV_32F, 1, 0), cv2.Sobel(gray, cv2.CV_32F, 0, 1)
+        )
+        flat = (cv2.dilate(grad, np.ones((3, 3), np.uint8)) < 40)[opaque][sample_ids]
+        if flat.mean() > 0.2:
+            fit = sample[flat]
+    sample = np.ascontiguousarray(fit, dtype=np.float32)
+    unique = np.unique(np.round(sample).astype(np.int32), axis=0)
+    k = min(max_colors, len(unique), len(sample))
     cv2.setRNGSeed(seed)
-    crit = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 40, 0.5)
-    _, _, centers = cv2.kmeans(sample, k, None, crit, 3, cv2.KMEANS_PP_CENTERS)
-
-    def assign(c: np.ndarray) -> np.ndarray:
-        d = ((lab[:, None, :] - c[None, :, :]) ** 2).sum(axis=2) if len(lab) * len(c) < 4e6 else None
-        if d is not None:
-            return d.argmin(axis=1)
-        out = np.empty(len(lab), dtype=np.int64)
-        step = 200000
-        for i in range(0, len(lab), step):
-            out[i:i + step] = ((lab[i:i + step, None, :] - c[None]) ** 2).sum(axis=2).argmin(axis=1)
-        return out
-
-    def assign_fit(C: np.ndarray) -> np.ndarray:
-        return np.concatenate([((fit[i:i + 200000, None, :] - C[None]) ** 2).sum(axis=2).argmin(axis=1)
-                               for i in range(0, len(fit), 200000)])
-
-    # alterna: funde cores quase iguais (ΔE76) ↔ recalcula médias ↔ descarta cores raras
+    if k == 1:
+        centers = sample.mean(axis=0, keepdims=True)
+    else:
+        _, _, centers = cv2.kmeans(
+            sample,
+            k,
+            None,
+            (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.5),
+            1,
+            cv2.KMEANS_PP_CENTERS,
+        )
     C = np.asarray(centers, dtype=np.float32)
-    for _ in range(12):
+    for _ in range(5):
         changed = False
         while len(C) > 1:
-            dist = np.linalg.norm(C[:, None] - C[None], axis=2)
-            np.fill_diagonal(dist, np.inf)
-            i, j = np.unravel_index(dist.argmin(), dist.shape)
-            if dist[i, j] >= merge_delta_e:
+            distance = np.linalg.norm(C[:, None] - C[None], axis=2)
+            np.fill_diagonal(distance, np.inf)
+            i, j = np.unravel_index(distance.argmin(), distance.shape)
+            if distance[i, j] >= merge_delta_e:
                 break
             C[i] = (C[i] + C[j]) / 2
             C = np.delete(C, j, axis=0)
             changed = True
-        fl = assign_fit(C)
-        shares = np.bincount(fl, minlength=len(C)) / len(fl)
-        keep = shares >= min_share
-        if keep.sum() == 0:
-            keep[shares.argmax()] = True
-        newC = np.array([fit[fl == i].mean(axis=0) if (fl == i).any() else C[i] for i in range(len(C))], dtype=np.float32)[keep]
-        if not changed and len(newC) == len(C) and np.abs(newC - C).max() < 0.05:
-            C = newC
+        labels = cKDTree(C).query(sample)[1]
+        counts = np.bincount(labels, minlength=len(C))
+        keep = counts >= max(1, min_share * len(sample))
+        if not keep.any():
+            keep[counts.argmax()] = True
+        new = np.array(
+            [sample[labels == i].mean(axis=0) for i in np.flatnonzero(keep)],
+            dtype=np.float32,
+        )
+        if not changed and len(new) == len(C) and np.abs(new - C).max() < 0.05:
+            C = new
             break
-        C = newC
-    labels = assign(C)
-
-    pal = cv2.cvtColor(C.reshape(-1, 1, 3).astype(np.float32), cv2.COLOR_LAB2RGB).reshape(-1, 3)
-    pal_rgb = np.clip(np.round(pal * 255), 0, 255).astype(np.uint8)
+        C = new
+    palette = cv2.cvtColor(C.reshape(-1, 1, 3), cv2.COLOR_LAB2RGB).reshape(-1, 3)
+    palette = np.clip(np.round(palette * 255), 0, 255).astype(np.uint8)
     out = rgba.copy()
-    out[..., :3][opaque] = pal_rgb[labels]
-    palette = [tuple(int(v) for v in p) for p in pal_rgb]
-    return out, palette
+    tree = cKDTree(C)
+    mapped = np.empty_like(rgb)
+    for i in range(0, len(rgb), 65536):
+        lab = cv2.cvtColor(
+            rgb[i : i + 65536].reshape(-1, 1, 3).astype(np.float32) / 255,
+            cv2.COLOR_RGB2LAB,
+        ).reshape(-1, 3)
+        mapped[i : i + 65536] = palette[tree.query(lab)[1]]
+    out[..., :3][opaque] = mapped
+    return out, [tuple(int(v) for v in c) for c in palette]
+
+
+def fine_detail_mask(rgba: np.ndarray) -> np.ndarray:
+    """Local bright/dark strokes <= ~8px, including letters and diacritics.
+
+    Contrast threshold suppresses low-amplitude JPEG/texture noise. This detects
+    geometry, not text semantics; it never invents or replaces characters.
+    """
+    alpha = rgba[..., 3:4].astype(np.float32) / 255
+    rgb = (rgba[..., :3] * alpha + 255 * (1 - alpha)).astype(np.uint8)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
+    # Color channels also detect strokes with similar luminance to the background.
+    bright = cv2.morphologyEx(rgb, cv2.MORPH_TOPHAT, kernel).max(axis=2)
+    dark = cv2.morphologyEx(rgb, cv2.MORPH_BLACKHAT, kernel).max(axis=2)
+    mask = (np.maximum(bright, dark) >= 24).astype(np.uint8)
+    return cv2.dilate(mask, np.ones((3, 3), np.uint8)).astype(bool)
 
 
 def clean_label_speckles(rgba: np.ndarray, min_area: int) -> np.ndarray:
@@ -183,7 +219,11 @@ def clean_label_speckles(rgba: np.ndarray, min_area: int) -> np.ndarray:
     if min_area <= 1:
         return rgba
     out = rgba.copy()
-    key = (out[..., 0].astype(np.int32) << 16) | (out[..., 1].astype(np.int32) << 8) | out[..., 2]
+    key = (
+        (out[..., 0].astype(np.int32) << 16)
+        | (out[..., 1].astype(np.int32) << 8)
+        | out[..., 2]
+    )
     key[out[..., 3] == 0] = -1
     for color in np.unique(key):
         m = (key == color).astype(np.uint8)
@@ -193,7 +233,10 @@ def clean_label_speckles(rgba: np.ndarray, min_area: int) -> np.ndarray:
             continue
         smask = np.isin(lab, small)
         # dilata para achar a cor vizinha mais comum
-        ring = cv2.dilate(smask.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool) & ~smask
+        ring = (
+            cv2.dilate(smask.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
+            & ~smask
+        )
         if not ring.any():
             continue
         vals, cnt = np.unique(key[ring], return_counts=True)
@@ -214,9 +257,15 @@ def binarize(rgba: np.ndarray) -> tuple[np.ndarray, tuple[int, int, int]]:
     comp = (rgba[..., :3].astype(np.float32) * a + 255 * (1 - a)).astype(np.uint8)
     gray = cv2.cvtColor(comp, cv2.COLOR_RGB2GRAY)
     gray = cv2.GaussianBlur(gray, (3, 3), 0)
-    _, ink = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    border = np.concatenate([gray[0], gray[-1], gray[:, 0], gray[:, -1]])
+    polarity = cv2.THRESH_BINARY if np.median(border) < 128 else cv2.THRESH_BINARY_INV
+    _, ink = cv2.threshold(gray, 0, 255, polarity + cv2.THRESH_OTSU)
     inkmask = ink > 0
-    color = tuple(int(v) for v in np.median(comp[inkmask], axis=0)) if inkmask.any() else (0, 0, 0)
+    color = (
+        tuple(int(v) for v in np.median(comp[inkmask], axis=0))
+        if inkmask.any()
+        else (0, 0, 0)
+    )
     out = np.zeros_like(rgba)
     out[..., 3] = 0
     out[inkmask] = (0, 0, 0, 255)
@@ -232,7 +281,11 @@ def smooth_labels(rgba: np.ndarray, sigma: float) -> np.ndarray:
     """
     if sigma <= 0:
         return rgba
-    key = (rgba[..., 0].astype(np.int32) << 16) | (rgba[..., 1].astype(np.int32) << 8) | rgba[..., 2]
+    key = (
+        (rgba[..., 0].astype(np.int32) << 16)
+        | (rgba[..., 1].astype(np.int32) << 8)
+        | rgba[..., 2]
+    )
     key[rgba[..., 3] == 0] = -1
     colors = np.unique(key)
     if len(colors) < 2:

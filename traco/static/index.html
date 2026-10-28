@@ -67,7 +67,7 @@ $('go').onclick=async()=>{
     resultURL=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'}));
     const img=new Image();img.alt='Resultado vetorizado';img.src=resultURL;$('out').replaceChildren(img);
     $('dl').href=resultURL;$('dl').download=selected.name.replace(/\.[^.]+$/,'')+'.svg';$('dl').hidden=false;
-    $('stats').textContent=`Tipo: ${rep.tipo} · SSIM: ${rep.ssim} · ${rep.caminhos} caminhos · ${(rep.bytes/1024).toFixed(1)} KB · ${rep.segundos}s`;
+    $('stats').textContent=`${rep.quality?.status==='rejected'?'REJEITADO — perda grave de detalhes. ':rep.quality?.status==='review'?'REVISAR — confira detalhes e cores. ':''}Tipo: ${rep.tipo} · Qualidade: ${rep.quality?.quality_score ?? '—'} · SSIM: ${rep.ssim} · ${rep.caminhos} caminhos · ${(rep.bytes/1024).toFixed(1)} KB · ${rep.segundos}s`;
   }catch(error){$('stats').textContent='Erro: '+error.message}
   finally{busy=false;document.querySelectorAll('input,select,button').forEach(el=>el.disabled=false);updateColors();$('go').disabled=!file;$('go').textContent='Vetorizar'}
 };

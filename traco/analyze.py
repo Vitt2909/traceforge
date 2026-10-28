@@ -7,6 +7,7 @@ Classes:
   illustration ilustração/personagem/flat com sombras → posterização + traçado colorido
   photo        foto, gradientes, muitas cores         → traçado fino (arquivo grande)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -21,12 +22,13 @@ class Analysis:
     width: int
     height: int
     has_alpha: bool
-    pixel_scale: int = 1          # fator de ampliação detectado em pixel art
-    distinct_colors: int = 0      # cores distintas (4 bits/canal)
-    top16_coverage: float = 0.0   # fração dos pixels cobertos pelas 16 cores mais comuns
+    pixel_scale: int = 1  # fator de ampliação detectado em pixel art
+    distinct_colors: int = 0  # cores distintas (4 bits/canal)
+    top16_coverage: float = 0.0  # fração dos pixels cobertos pelas 16 cores mais comuns
     top64_coverage: float = 0.0
     saturation: float = 0.0
-    extremes_ratio: float = 0.0   # fração de pixels muito claros ou muito escuros
+    chromatic_fraction: float = 0.0
+    extremes_ratio: float = 0.0  # fração de pixels muito claros ou muito escuros
     background: tuple[int, int, int] | None = None
     notes: list[str] = field(default_factory=list)
 
@@ -85,6 +87,7 @@ def analyze(rgba: np.ndarray, has_alpha: bool) -> Analysis:
     s = np.asarray(small).copy()
     # tira ruído de JPEG antes de contar cores (senão todo logo em JPEG parece "foto")
     import cv2
+
     s[..., :3] = cv2.bilateralFilter(s[..., :3], 5, 40, 5)
     rgb = _opaque_rgb(s)
     if rgb.size == 0:
@@ -101,17 +104,32 @@ def analyze(rgba: np.ndarray, has_alpha: bool) -> Analysis:
     a.top16_coverage = float(counts[:16].sum() / total)
     a.top64_coverage = float(counts[:64].sum() / total)
 
-    hsv = np.asarray(Image.fromarray(rgb.reshape(-1, 1, 3)).convert("HSV")).reshape(-1, 3)
+    hsv = np.asarray(Image.fromarray(rgb.reshape(-1, 1, 3)).convert("HSV")).reshape(
+        -1, 3
+    )
     a.saturation = float(hsv[:, 1].mean() / 255)
+    # A white/black background must not dilute a small but meaningful brand color.
+    chromatic = (
+        (rgb.max(axis=1).astype(int) - rgb.min(axis=1) > 24)
+        & (hsv[:, 1] > 55)
+        & (hsv[:, 2] > 40)
+    )
+    a.chromatic_fraction = float(chromatic.mean())
+    monochrome = np.count_nonzero(chromatic) < max(8, len(rgb) * 0.001)
     gray = rgb.mean(axis=1)
     a.extremes_ratio = float(((gray < 70) | (gray > 190)).mean())
 
     a.pixel_scale = detect_pixel_scale(rgba)
     native_w, native_h = w // a.pixel_scale, h // a.pixel_scale
 
-    if (a.pixel_scale >= 2 or max(w, h) <= 128) and max(native_w, native_h) <= 256 and a.distinct_colors <= 256 and a.top64_coverage > 0.97:
+    if (
+        (a.pixel_scale >= 2 or max(w, h) <= 128)
+        and max(native_w, native_h) <= 256
+        and a.distinct_colors <= 256
+        and a.top64_coverage > 0.97
+    ):
         a.kind = "pixel"
-    elif a.saturation < 0.10 and a.extremes_ratio > 0.90:
+    elif monochrome and a.saturation < 0.10 and a.extremes_ratio > 0.90:
         a.kind = "lineart"
     elif a.top16_coverage > 0.93:
         a.kind = "logo"
@@ -119,5 +137,7 @@ def analyze(rgba: np.ndarray, has_alpha: bool) -> Analysis:
         a.kind = "illustration"
     else:
         a.kind = "photo"
-        a.notes.append("foto/gradiente: o SVG vai ficar pesado; considere --preset illustration para um visual pôster")
+        a.notes.append(
+            "foto/gradiente: o SVG vai ficar pesado; considere --preset illustration para um visual pôster"
+        )
     return a
